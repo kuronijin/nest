@@ -16,26 +16,27 @@ import {
 @Module({})
 export class ClientsModule {
   static register(options: ClientsModuleOptions): DynamicModule {
-    const clients = (options || []).map(item => ({
+    const clients = (options.providers || []).map(item => ({
       provide: item.name,
       useValue: this.assignOnAppShutdownHook(ClientProxyFactory.create(item)),
     }));
     return {
       module: ClientsModule,
+      global: options.isGlobal,
       providers: clients,
       exports: clients,
     };
   }
 
   static registerAsync(options: ClientsModuleAsyncOptions): DynamicModule {
-    const providers: Provider[] = options.reduce(
+    const providers: Provider[] = options.providers.reduce(
       (accProviders: Provider[], item) =>
         accProviders
           .concat(this.createAsyncProviders(item))
           .concat(item.extraProviders || []),
       [],
     );
-    const imports = options.reduce(
+    const imports = options.providers.reduce(
       (accImports, option) =>
         option.imports && !accImports.includes(option.imports)
           ? accImports.concat(option.imports)
@@ -44,6 +45,7 @@ export class ClientsModule {
     );
     return {
       module: ClientsModule,
+      global: options.isGlobal,
       imports,
       providers: providers,
       exports: providers,
